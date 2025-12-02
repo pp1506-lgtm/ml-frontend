@@ -1,0 +1,130 @@
+import * as React from "react"
+const API_URL = "https://ml-analytics-app.onrender.com/predict/batch"
+
+export default function BatchPredict({ apiUrl }) {
+    const [file, setFile] = React.useState<File | null>(null)
+    const [error, setError] = React.useState("")
+    const [result, setResult] = React.useState<null | any>(null)
+    const [loading, setLoading] = React.useState(false)
+
+    // -----------------------------------------------
+    // HANDLE FILE UPLOAD
+    // -----------------------------------------------
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setError("")
+        setResult(null)
+
+        const selected = e.target.files?.[0]
+
+        if (!selected) return
+
+        if (!selected.name.endsWith(".csv")) {
+            setError("Please upload a valid CSV file.")
+            setFile(null)
+            return
+        }
+
+        setFile(selected)
+    }
+
+    // -----------------------------------------------
+    // SEND CSV TO API
+    // -----------------------------------------------
+    const handleUpload = async () => {
+        if (!file) {
+            setError("Upload a CSV file first.")
+            return
+        }
+
+        setError("")
+        setLoading(true)
+
+        const formData = new FormData()
+        formData.append("file", file)
+
+        try {
+            const res = await fetch(API_URL, {
+                method: "POST",
+                body: formData,
+            })
+
+            const data = await res.json()
+            setResult(data)
+        } catch (err) {
+            setError("Network error - check API URL.")
+        }
+
+        setLoading(false)
+    }
+
+    // -----------------------------------------------
+    // STYLES
+    // -----------------------------------------------
+    const containerStyle: React.CSSProperties = {
+        width: "100%",
+        margin: "0",
+        padding: "20px",
+        color: "white",
+        fontFamily: "Inter, sans-serif",
+    }
+
+    const boxStyle: React.CSSProperties = {
+        padding: 20,
+        background: "#1e1e1e",
+        border: "1px solid #333",
+        borderRadius: 10,
+        display: "flex",
+        flexDirection: "column",
+        gap: 20,
+        alignItems: "flex-start",
+    }
+
+    const buttonStyle: React.CSSProperties = {
+        padding: "12px 24px",
+        background: "white",
+        color: "black",
+        borderRadius: 8,
+        cursor: "pointer",
+        fontWeight: 600,
+    }
+
+    return (
+        <div style={containerStyle}>
+            <div style={boxStyle}>
+                {/* CSV UPLOAD */}
+                <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileChange}
+                    style={{ cursor: "pointer" }}
+                />
+
+                {/* ERROR */}
+                {error && (
+                    <p style={{ color: "tomato", fontSize: 14 }}>{error}</p>
+                )}
+
+                {/* UPLOAD BUTTON */}
+                <button onClick={handleUpload} style={buttonStyle}>
+                    {loading ? "Processing..." : "Upload & Predict"}
+                </button>
+            </div>
+
+            {/* RESULT */}
+            <pre
+                style={{
+                    marginTop: 30,
+                    padding: 20,
+                    background: "#1a1a1a",
+                    border: "1px solid #333",
+                    borderRadius: 10,
+                    whiteSpace: "pre-wrap",
+                }}
+            >
+                {result
+                    ? JSON.stringify(result, null, 2)
+                    : "Predictions will appear here…"}
+            </pre>
+        </div>
+    )
+}
